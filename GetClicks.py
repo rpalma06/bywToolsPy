@@ -92,9 +92,7 @@ def read_number_from_key(line: str, key: str, start=0) -> (str | None,int):
             number_string = key_aux[0:end_idx]
             try:
                 return re.search(r"[+-]?\d+(\.\d+)?", number_string).group(), next_key
-            except ValueError:
-                pass
-            except AttributeError:
+            except ValueError | AttributeError:
                 pass
     return None, -1
 
@@ -152,7 +150,7 @@ def extract_classification_data(line: str) -> Classification.Classification | No
                                          workflow_version, started_at, gold_standard, expert, subject_id)
 
 
-def extract_sub_tile_center(line: str) -> Coordinate:
+def extract_sub_tile_center(line: str) -> Coordinate.Coordinate | None :
      ra = None
      dec = None
      line_aux = line
@@ -172,12 +170,24 @@ def extract_sub_tile_center(line: str) -> Coordinate:
                  try:
                     ra = float(ra_string)
                     dec = float(dec_string)
-                 except ValueError:
-                     pass
-                 except AttributeError:
+                 except ValueError | AttributeError:
                      pass
 
      if (ra is not None) and (dec is not None):
          return Coordinate.Coordinate(ra, dec)
      else:
          return None
+
+
+def extract_tile_number(line: str) -> int | None:
+    tn_idx = line.find("Tile Number\"\":\"\"")
+    if tn_idx >= 0:
+        line_aux = line[tn_idx + 16:]
+        end_idx = line_aux.find("\"\"")
+        if end_idx >= 0:
+            line_aux = line_aux[0: end_idx]
+            try:
+                return int(line_aux)
+            except ValueError | AttributeError:
+                pass
+    return None

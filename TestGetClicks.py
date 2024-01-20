@@ -61,6 +61,9 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(-3.8591621, coordinate.dec)
         self.assertEqual(150.86998, coordinate.ra)
 
+    def test_extract_tile_numnber(self):
+        tile_number = gc.extract_tile_number(COMPLETE_LINE)
+        self.assertEqual(7672, tile_number)
 
 
 if __name__ == '__main__':
