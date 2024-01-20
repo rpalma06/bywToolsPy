@@ -1,10 +1,10 @@
 class Click:
 
-    def __init__(self, _frame, _tool, _x, _y):
-        self._frame = 0
-        self._tool = 0
-        self._x = 0.0
-        self._y = 0.0
+    def __init__(self, frame, tool, x, y):
+        self._frame = frame
+        self._tool = tool
+        self._x = x
+        self._y = y
 
     @property
     def frame(self):

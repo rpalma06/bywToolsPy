@@ -2,6 +2,8 @@ import re
 import sys
 import Click
 
+FRAME_PREFIX = "\"\"frame\"\":"
+
 TOOL_PREFIX = "\"\"tool\"\":"
 
 X_PREFIX = "\"\"x\"\":"
@@ -32,14 +34,42 @@ def read_candidates():
         raise
 
 
-def extract_clicks(self, line: str):
-    return []
+def extract_clicks(line: str):
+    line_aux = line
+    max_idx = 0
+    next_click = 0
+    clicks = []
+    while True:
+        x, next_idx = read_number_from_key(line_aux, X_PREFIX, next_click)
+        if next_idx < 0:
+            break
+        max_idx = max(max_idx, next_idx)
+        y, next_idx = read_number_from_key(line_aux, Y_PREFIX, next_click)
+        if next_idx < 0:
+            break
+        max_idx = max(max_idx, next_idx)
+        frame, next_idx = read_number_from_key(line_aux, FRAME_PREFIX, next_click)
+        if next_idx < 0:
+            break
+        max_idx = max(max_idx, next_idx)
+        tool, next_idx = read_number_from_key(line_aux, TOOL_PREFIX, next_click)
+        if next_idx < 0:
+            break
+        max_idx = max(max_idx, next_idx)
+        if next_idx < 0:
+            break
+        next_click = max_idx+1
+
+        if (x is not None) and (y is not None) and (frame is not None) and (tool is not None):
+            click = Click.Click(int(frame), int(tool), float(x), float(y))
+            clicks.append(click)
+    return clicks
 
 
 def read_number_from_key(line: str, key: str, start=0):
     idx = line.find(key, start)
 
-    if idx + len(key) < len(line):
+    if (idx >= 0) and (idx + len(key) < len(line)):
         key_aux = line[idx + len(key):]
         comma_idx = key_aux.find(',')
         bracket_idx = key_aux.find('}')
@@ -61,5 +91,7 @@ def read_number_from_key(line: str, key: str, start=0):
                 return re.search(r"[+-]?\d+(\.\d+)?", number_string).group(), next_key
             except ValueError:
                 pass
-    return None
+            except AttributeError:
+                pass
+    return None, -1
 
