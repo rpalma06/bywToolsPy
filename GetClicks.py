@@ -1,6 +1,9 @@
 import re
 import sys
+
+import Classification
 import Click
+import datetime
 
 FRAME_PREFIX = "\"\"frame\"\":"
 
@@ -24,7 +27,6 @@ def read_candidates():
     csv = open(path, "r")
     try:
         line = csv.readline()
-        columns = line.split(",")
     except OSError as err:
         print("OS error:", err)
     except ValueError:
@@ -95,3 +97,54 @@ def read_number_from_key(line: str, key: str, start=0):
                 pass
     return None, -1
 
+
+
+def extract_classification_data(line: str) -> Classification.Classification:
+    columns = line.split(",")
+    if columns is None:
+        return None
+
+    classification_id = None
+    user_name = ""
+    user_id = ""
+    user_ip = ""
+    workflow_id = ""
+    workflow_name = ""
+    workflow_version = ""
+    created_at = None
+    gold_standard = ""
+    expert = ""
+    subject_id = None
+    if len(columns) > 0:
+        try:
+            classification_id = int(columns[0])
+        except ValueError:
+            pass
+    if len(columns) > 1:
+        user_name = columns[1]
+    if len(columns) > 2:
+        user_id = columns[2]
+    if len(columns) > 3:
+        user_ip = columns[3]
+    if len(columns) > 4:
+        workflow_id = columns[4]
+    if len(columns) > 5:
+        workflow_name = columns[5]
+    if len(columns) > 6:
+        workflow_version = columns[6]
+    if len(columns) > 7:
+        # e.g.: 2017-01-06 02:02:46 UTC
+        created_at_string = columns[7]
+        try:
+            created_at = datetime.datetime.strptime(created_at_string, "%Y-%m-%d %H:%M:%S %Z")
+        except:
+            pass
+    if len(columns) > 8:
+        gold_standard = columns[8]
+    if len(columns) > 9:
+        expert = columns[9]
+    try:
+        subject_id = int(columns[len(columns) - 1])
+    except ValueError:
+        pass
+    return Classification.Classification(classification_id, user_name, user_id, user_ip, workflow_id, workflow_name, workflow_version, created_at, gold_standard, expert, subject_id)
