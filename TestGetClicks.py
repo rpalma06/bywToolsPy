@@ -1,7 +1,6 @@
 import datetime
 import unittest
 
-import GetClicks
 import GetClicks as gc
 
 
@@ -28,7 +27,7 @@ class MyTestCase(unittest.TestCase):
 
 
     def test_extract_clicks(self):
-        clicks = GetClicks.extract_clicks(COMPLETE_LINE)
+        clicks = gc.extract_clicks(COMPLETE_LINE)
         self.assertEqual(4, len(clicks))
         self.assertEqual(3, clicks[3].frame)
         self.assertEqual(0, clicks[3].tool)
@@ -37,7 +36,7 @@ class MyTestCase(unittest.TestCase):
 
 
     def test_extract_classification(self):
-        classification = GetClicks.extract_classification_data(COMPLETE_LINE)
+        classification = gc.extract_classification_data(COMPLETE_LINE)
         self.assertIsNotNone(classification)
         self.assertEqual(24558580, classification.classification_id)
         self.assertEqual("MarioMario", classification.user_name)
@@ -55,6 +54,12 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual("", classification.gold_standard)
         self.assertEqual("", classification.expert)
         self.assertEqual(5192597, classification.subject_id)
+
+    def test_extract_subtile_center(self):
+        coordinate = gc.extract_sub_tile_center(COMPLETE_LINE)
+        self.assertIsNotNone(coordinate)
+        self.assertEqual(-3.8591621, coordinate.dec)
+        self.assertEqual(150.86998, coordinate.ra)
 
 
 

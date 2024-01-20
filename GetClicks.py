@@ -5,6 +5,8 @@ import Classification
 import Click
 import datetime
 
+import Coordinate
+
 FRAME_PREFIX = "\"\"frame\"\":"
 
 TOOL_PREFIX = "\"\"tool\"\":"
@@ -36,7 +38,7 @@ def read_candidates():
         raise
 
 
-def extract_clicks(line: str):
+def extract_clicks(line: str) -> list[Click.Click]:
     line_aux = line
     max_idx = 0
     next_click = 0
@@ -68,14 +70,13 @@ def extract_clicks(line: str):
     return clicks
 
 
-def read_number_from_key(line: str, key: str, start=0):
+def read_number_from_key(line: str, key: str, start=0) -> (str | None,int):
     idx = line.find(key, start)
 
     if (idx >= 0) and (idx + len(key) < len(line)):
         key_aux = line[idx + len(key):]
         comma_idx = key_aux.find(',')
         bracket_idx = key_aux.find('}')
-        end_idx = -1
         if comma_idx < 0:
             if bracket_idx < 0:
                 end_idx = -1
@@ -98,9 +99,9 @@ def read_number_from_key(line: str, key: str, start=0):
     return None, -1
 
 
-
-def extract_classification_data(line: str) -> Classification.Classification:
+def extract_classification_data(line: str) -> Classification.Classification | None:
     columns = line.split(",")
+
     if columns is None:
         return None
 
@@ -111,7 +112,7 @@ def extract_classification_data(line: str) -> Classification.Classification:
     workflow_id = ""
     workflow_name = ""
     workflow_version = ""
-    created_at = None
+    started_at = None
     gold_standard = ""
     expert = ""
     subject_id = None
@@ -136,7 +137,7 @@ def extract_classification_data(line: str) -> Classification.Classification:
         # e.g.: 2017-01-06 02:02:46 UTC
         created_at_string = columns[7]
         try:
-            created_at = datetime.datetime.strptime(created_at_string, "%Y-%m-%d %H:%M:%S %Z")
+            started_at = datetime.datetime.strptime(created_at_string, "%Y-%m-%d %H:%M:%S %Z")
         except:
             pass
     if len(columns) > 8:
@@ -147,4 +148,36 @@ def extract_classification_data(line: str) -> Classification.Classification:
         subject_id = int(columns[len(columns) - 1])
     except ValueError:
         pass
-    return Classification.Classification(classification_id, user_name, user_id, user_ip, workflow_id, workflow_name, workflow_version, created_at, gold_standard, expert, subject_id)
+    return Classification.Classification(classification_id, user_name, user_id, user_ip, workflow_id, workflow_name,
+                                         workflow_version, started_at, gold_standard, expert, subject_id)
+
+
+def extract_sub_tile_center(line: str) -> Coordinate:
+     ra = None
+     dec = None
+     line_aux = line
+     sc_idx = line_aux.find("subtile center")
+     if (sc_idx >= 0) and (sc_idx + 14 < len(line_aux)) :
+         line_aux = line_aux[sc_idx + 14:]
+         ra_idx = line_aux.find("R.A.=")
+         dec_idx = line_aux.find("dec=")
+         if (ra_idx >= 0) and (dec_idx >= 0):
+             ra_string = line_aux[ra_idx + 5:]
+             quotes_idx = ra_string.find("\"\"")
+             if (quotes_idx >= 0) and (quotes_idx > ra_idx) and (quotes_idx > dec_idx):
+                 ra_string = ra_string[0: dec_idx - ra_idx - 5]
+                 dec_string = line_aux[dec_idx + 4: ra_idx + 5 + quotes_idx]
+                 ra = None
+                 dec = None
+                 try:
+                    ra = float(ra_string)
+                    dec = float(dec_string)
+                 except ValueError:
+                     pass
+                 except AttributeError:
+                     pass
+
+     if (ra is not None) and (dec is not None):
+         return Coordinate.Coordinate(ra, dec)
+     else:
+         return None
