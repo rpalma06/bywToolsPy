@@ -1,11 +1,16 @@
 import re
 import sys
+import datetime
+
+import numpy as np
 
 import Classification
 import Click
-import datetime
-
 import Coordinate
+
+
+from astropy.io import fits
+from astropy.wcs import WCS
 
 FRAME_PREFIX = "\"\"frame\"\":"
 
@@ -22,21 +27,65 @@ NATURAL_HEIGHT_PREFIX = "\"\"naturalHeight\"\":"
 
 def main():
     args = sys.argv[1:]
-
-
-def read_candidates():
-    path = "F:\\UCD\\candidates\\backyard-worlds-planet-9-classifications.1.5.24.csv"
-    csv = open(path, "r")
+    wcs = None
     try:
-        line = csv.readline()
+        hdu_list = fits.open("F:\\UCD\\candidates\\astrom-atlas.fits")
+        hdu_list_info = hdu_list.info()
+        header = hdu_list[0].header
+        data = hdu_list[1].data
+        tile_list = []
+        for row in data:
+            naxis_array = [int(row["NAXIS"][0]), int(row["NAXIS"][1])]
+            w = WCS(naxis=len(row["NAXIS"]))
+            w.wcs.cd = row['CD']
+            #w.wcs.cdelt = row['CDELT']
+            w.wcs.crpix = row['CRPIX']
+            w.wcs.crval = row["CRVAL"]
+            w.wcs.ctype = row["CTYPE"]
+            w.wcs.latpole = row["LATPOLE"]
+            tile_list.append(w)
+    finally:
+        hdu_list.close()
+
+    read_candidates(tile_list)
+
+
+
+
+
+def read_candidates(tile_list: list):
+    path = "F:\\UCD\\candidates\\backyard-worlds-planet-9-classifications.1.5.24.csv"
+    csv = open(path, mode="r", encoding="UTF-8")
+    try:
+        header = csv.readline()
+        line = ''
+        count = 0
+        while line is not None and count < 12000:
+            line = csv.readline()
+            classification_data = extract_classification_data(line)
+            clicks = extract_clicks(line)
+            sub_tile_center = extract_sub_tile_center(line)
+            tile_number = extract_tile_number(line)
+            if classification_data is not None and clicks is not None and len(clicks) > 0 and sub_tile_center is not None and tile_number is not None:
+                for click in clicks:
+                    pix = [[click.x, click.y]]
+                    world = tile_list[tile_number].wcs_pix2world(pix, 1.0)
+                    h = 0
+            count += 1
+            if count % 1000 == 0:
+                print(count)
+
     except OSError as err:
         print("OS error:", err)
-    except ValueError:
-        print("Could not convert data to an integer.")
+    except ValueError as err:
+        print("Could not convert data to an integer.", err)
     except Exception as err:
         print(f"Unexpected {err=}, {type(err)=}")
         raise
-
+    except:
+        h = 0
+    finally:
+        csv.close()
 
 def extract_clicks(line: str) -> list[Click.Click]:
     line_aux = line
@@ -191,3 +240,7 @@ def extract_tile_number(line: str) -> int | None:
             except ValueError | AttributeError:
                 pass
     return None
+
+
+if __name__ == "__main__":
+    main()

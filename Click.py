@@ -1,3 +1,7 @@
+from dataclasses import dataclass
+
+
+@dataclass
 class Click:
 
     def __init__(self, frame, tool, x, y):

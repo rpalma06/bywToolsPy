@@ -1,7 +1,10 @@
 import datetime
+import io
+from dataclasses import dataclass
 
-
+@dataclass
 class Classification:
+
 
     def __init__(self, classification_id: int, user_name: str, user_id: str, user_ip: str,
                  workflow_id: str, workflow_name: str, workflow_version: str, started_at: datetime.datetime, gold_standard: str, expert: str, subject_id: int):

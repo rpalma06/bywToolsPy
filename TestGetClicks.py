@@ -1,5 +1,12 @@
 import datetime
 import unittest
+import numpy as np
+import pytest
+from numpy.testing import assert_allclose
+
+from astropy import units as u
+from astropy.modeling import models
+from astropy.wcs import wcs
 
 import GetClicks as gc
 
@@ -55,7 +62,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual("", classification.expert)
         self.assertEqual(5192597, classification.subject_id)
 
-    def test_extract_subtile_center(self):
+    def test_extract_sub_tile_center(self):
         coordinate = gc.extract_sub_tile_center(COMPLETE_LINE)
         self.assertIsNotNone(coordinate)
         self.assertEqual(-3.8591621, coordinate.dec)
@@ -64,6 +71,25 @@ class MyTestCase(unittest.TestCase):
     def test_extract_tile_numnber(self):
         tile_number = gc.extract_tile_number(COMPLETE_LINE)
         self.assertEqual(7672, tile_number)
+
+    def test_against_wcslib(self):
+        inp = [(0, 0), (4000, -20.56), (-2001.5, 45.9),
+                                       (0, 90), (0, -90), (np.mgrid[:4, :6])]
+        w = wcs.WCS()
+        crval = [202.4823228, 47.17511893]
+        wcs.crval = crval
+        wcs.ctype = ['RA---TAN', 'DEC--TAN']
+
+        lonpole = 180
+        tan = models.Pix2Sky_Gnomonic()
+        n2c = models.RotateNative2Celestial(crval[0] * u.deg, crval[1] * u.deg, lonpole * u.deg)
+        c2n = models.RotateCelestial2Native(crval[0] * u.deg, crval[1] * u.deg, lonpole * u.deg)
+        m = tan | n2c
+        minv = c2n | tan.inverse
+
+        radec = w.wcs_pix2world(inp[0], inp[1], 1)
+        xy = w.wcs_world2pix(radec[0], radec[1], 1)
+
 
 
 if __name__ == '__main__':
