@@ -33,25 +33,24 @@ NATURAL_HEIGHT_PREFIX = "\"\"naturalheight\"\":"
 def main():
 
     args = sys.argv[1:]
+    input_folder = "F:\\UCD\\candidates\\input\\"
+    output_filename = "c:\\UCD\\candidates\\"
+    wcs_filename = "F:\\UCD\\candidates\\astrom-atlas.fits"
     try:
-        input_folder = "F:\\UCD\\candidates\\input\\"
-        output_filename = "c:\\UCD\\candidates\\"
-        wcs_filename = "F:\\UCD\\candidates\\astrom-atlas.fits"
-        try:
-            if len(args) > 0:
-                input_folder = args[0]
-            if len(args) > 1:
-                output_filename = args[1]
-            if len(args) > 2:
-                wcs_filename = args[2]
-        except:
-            pass
-        hdu_list = fits.open(wcs_filename)
-        data = hdu_list[1].data
-        global_wcs = WCS(hdu_list[1].header, fobj=hdu_list)
+        if len(args) > 0:
+            input_folder = args[0]
+        if len(args) > 1:
+            output_filename = args[1]
+        if len(args) > 2:
+            wcs_filename = args[2]
         tile_list = []
-        origin_list = []
-        for row in data:
+        origin_list = get_wcs_tiles(wcs_path=wcs_filename)
+        process_candidates(tile_list, origin_list, input_folder, output_filename)
+    except:
+        pass
+
+
+        """for row in data:
             w = WCS(naxis=2)
 
             w.wcs.cd = row['CD']
@@ -62,14 +61,10 @@ def main():
             w.wcs.latpole = row["LATPOLE"]
             w.wcs.lonpole = row["LONGPOLE"]
             tile_list.append(w)
-            origin_list.append(row["CDELT"][0])
-    finally:
-        hdu_list.close()
-
-    process_candidates(global_wcs, tile_list, origin_list, input_folder, output_filename)
+            origin_list.append(row["CDELT"][0])"""
 
 
-def get_wcs_tiles(wcs_path: str) -> list[WCS]:
+def get_wcs_tiles(wcs_path: str) -> (list[WCS], list[float]):
     hdu_list = None
     try:
         hdu_list = fits.open(wcs_path)
@@ -77,12 +72,10 @@ def get_wcs_tiles(wcs_path: str) -> list[WCS]:
         tile_list = []
         origin_list = []
         for row in data:
-            naxis_array = [int(row["NAXIS"][0]), int(row["NAXIS"][1])]
             naxis = len(row["NAXIS"])
-            w = WCS(naxis=2)
+            w = WCS(naxis=naxis)
 
             w.wcs.cd = row['CD']
-            # w.wcs.cdelt = row['CDELT']
             w.wcs.crpix = row['CRPIX']
             w.wcs.crval = row["CRVAL"]
             w.wcs.ctype = row["CTYPE"]
@@ -93,10 +86,10 @@ def get_wcs_tiles(wcs_path: str) -> list[WCS]:
     finally:
         if hdu_list is not None:
             hdu_list.close()
-    return tile_list
+    return tile_list, origin_list
 
 
-def process_candidates(original_wcs: WCS, tile_list: list, origin_list: list, input_folder: str, output_path: str):
+def process_candidates(tile_list: list, origin_list: list, input_folder: str, output_path: str):
     #input_path = "F:\\UCD\\candidates\\backyard-worlds-planet-9-classifications.csv"
     files = os.listdir(input_folder)
     out_prefix = "clicks_ra_dec"
@@ -213,7 +206,7 @@ def process_candidates(original_wcs: WCS, tile_list: list, origin_list: list, in
                 except ValueError as err:
                     print("Could not convert data to an integer.", err)
                 except Exception as err:
-                    print(f"Unexpected {err=}, {type(err)=}")
+                    print("Unexpected {err=}, {type(err)=}", err)
                     raise
 
             finally:
