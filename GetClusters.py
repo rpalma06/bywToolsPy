@@ -129,7 +129,7 @@ def main():
         clusters_file = None
         try:
             clusters_file = open(clusters_file_path, "w")
-            clusters_file.write("center_ra;center_dec;nb_points;kurtosis;mean_distance;points\n")
+            clusters_file.write("center_ra;center_dec;nb_points;Q;kurtosis;mean_distance;points\n")
             if len(args) > 0:
                 input_folder = args[0]
             if len(args) > 1:
@@ -194,6 +194,8 @@ def main():
                         cluster_line.write(str(cluster_center[1]))
                         cluster_line.write(";")
                         cluster_line.write(str(len(cluster_points)))
+                        cluster_line.write(";")
+                        cluster_line.write(str(m4/mean_distance))
                         cluster_line.write(";")
                         cluster_line.write(str(m4))
                         cluster_line.write(";")
