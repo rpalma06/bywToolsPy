@@ -100,7 +100,7 @@ def store_by_region(clicks_coordinates: ndarray[Any, dtype[float]]):
                 region_array[(x_pos - 1) % 360][(y_pos - 1) % 180].append([ra, dec])
         if y_upper_pos > y_pos:
             region_array[x_pos % 360][(y_pos + 1) % 180].append([ra, dec])
-        if y_lower_pos > y_pos:
+        if y_lower_pos < y_pos:
             region_array[x_pos % 360][(y_pos - 1) % 180].append([ra, dec])
 
     for i in range(360):
@@ -129,7 +129,7 @@ def main():
         clusters_file = None
         try:
             clusters_file = open(clusters_file_path, "w")
-            clusters_file.write("center_ra;center_dec;nb_points;Q;kurtosis;mean_distance;points\n")
+            clusters_file.write("center_ra;center_dec;nb_points;q;kurtosis;mean_distance;points\n")
             if len(args) > 0:
                 input_folder = args[0]
             if len(args) > 1:
