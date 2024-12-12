@@ -1,20 +1,15 @@
-import math
 import re
 import sys
 import datetime
 import shutil
-
-from astropy.coordinates import SkyCoord
-
+import io
+import os
 
 import Classification
 import Click
 import Coordinate
-import io
-import os
+import FitsTiles
 
-from astropy.io import fits
-from astropy.wcs import WCS
 from astropy.wcs import utils
 
 FRAME_PREFIX = "\"\"frame\"\":"
@@ -31,85 +26,72 @@ NATURAL_HEIGHT_PREFIX = "\"\"naturalheight\"\":"
 
 
 def main():
-
+    """
+    Process the clocks from BYW P9 clicks files
+    Command line:
+    python GetClicks.py <click_files_input_folder> <work_folder> <result_folder> <result_file_name_prefix>
+                        <wcs_file_path>
+    Without arguments, the command line would be like:
+    python GetClicks.py ".\\input\\" ".\\work\\" ".\\results\\" "clicks_ra_dec" ".\\fits\\astrom-atlas.fits"
+    """
     args = sys.argv[1:]
-    input_folder = "F:\\UCD\\candidates\\input\\"
-    output_filename = "c:\\UCD\\candidates\\"
-    wcs_filename = "F:\\UCD\\candidates\\astrom-atlas.fits"
+    click_files_input_folder = ".\\input\\"
+    work_folder = ".\\work\\"
+    result_folder = ".\\results\\"
+    result_file_name_prefix = "clicks_ra_dec"
+    wcs_file_path_name = ".\\fits\\astrom-atlas.fits"
+
     try:
         if len(args) > 0:
-            input_folder = args[0]
+            click_files_input_folder = args[0]
         if len(args) > 1:
-            output_filename = args[1]
+            work_folder = args[1]
         if len(args) > 2:
-            wcs_filename = args[2]
+            result_folder = args[2]
+        if len(args) > 3:
+            wcs_file_path_name = args[3]
         tile_list = []
-        origin_list = get_wcs_tiles(wcs_path=wcs_filename)
-        process_candidates(tile_list, origin_list, input_folder, output_filename)
+        origin_list = FitsTiles.get_wcs_tiles(fits_file_path=wcs_file_path_name)
+        process_candidates(tile_list, origin_list, click_files_input_folder, work_folder, result_folder,
+                           result_file_name_prefix)
     except:
         pass
 
 
-        """for row in data:
-            w = WCS(naxis=2)
+def process_candidates(wcs_tile_list: list, origin_list: list, input_folder: str, work_folder: str, results_folder: str,
+                       results_prefix: str):
+    """
+    Process the clicks files and stores the results in independent files by month and year.
+    :param wcs_tile_list: list of WCS tiles.
+    :param origin_list: list of pixel coordinate system origin for each tile.
+    :param input_folder: the folder containing the clicks files. They entries in the files must be chronologically in order.
+    :param work_folder: work folder for generating temporary files
+    :param results_folder: folder to save the resulting files
+    :param results_prefix: The resulting files name suffix.
+    """
+    click_files = os.listdir(input_folder)
 
-            w.wcs.cd = row['CD']
+    if results_prefix is None:
+        results_prefix = "clicks_ra_dec"
 
-            w.wcs.crpix = row['CRPIX']
-            w.wcs.crval = row["CRVAL"]
-            w.wcs.ctype = row["CTYPE"]
-            w.wcs.latpole = row["LATPOLE"]
-            w.wcs.lonpole = row["LONGPOLE"]
-            tile_list.append(w)
-            origin_list.append(row["CDELT"][0])"""
-
-
-def get_wcs_tiles(wcs_path: str) -> (list[WCS], list[float]):
-    hdu_list = None
-    try:
-        hdu_list = fits.open(wcs_path)
-        data = hdu_list[1].data
-        tile_list = []
-        origin_list = []
-        for row in data:
-            naxis = len(row["NAXIS"])
-            w = WCS(naxis=naxis)
-
-            w.wcs.cd = row['CD']
-            w.wcs.crpix = row['CRPIX']
-            w.wcs.crval = row["CRVAL"]
-            w.wcs.ctype = row["CTYPE"]
-            w.wcs.latpole = row["LATPOLE"]
-            w.wcs.lonpole = row["LONGPOLE"]
-            tile_list.append(w)
-            origin_list.append(row["CDELT"][0])
-    finally:
-        if hdu_list is not None:
-            hdu_list.close()
-    return tile_list, origin_list
-
-
-def process_candidates(tile_list: list, origin_list: list, input_folder: str, output_path: str):
-    #input_path = "F:\\UCD\\candidates\\backyard-worlds-planet-9-classifications.csv"
-    files = os.listdir(input_folder)
-    out_prefix = "clicks_ra_dec"
     out = None
     csv = None
     count = 0
     file_suffix = None
-    out_file_name = ''
+    results_file_name = ''
     if not input_folder.endswith(os.sep):
         input_folder = input_folder + os.sep
 
     try:
-        for in_file_name in files:
+        file_count = 0
+        for in_file_name in click_files:
             line = ' '
             try:
                 csv_file_name = input_folder + in_file_name
                 csv = open(csv_file_name, mode="r", encoding="UTF-8")
                 print(in_file_name)
-                if not output_path.endswith(os.sep):
-                    output_path = output_path + os.sep
+                if not work_folder.endswith(os.sep):
+                    work_folder = work_folder + os.sep
 
                 try:
                     while line is not None and len(line) > 0:
@@ -145,17 +127,19 @@ def process_candidates(tile_list: list, origin_list: list, input_folder: str, ou
                                                                                "%Y-%m-%d %H:%M:%S") + " UTC"
                                 new_file_suffix = "_" + started_at_string[0:7]
                                 if file_suffix != new_file_suffix:
-                                    old_out_file_name = out_file_name
-                                    out_file_name = out_prefix + new_file_suffix + ".csv"
-
+                                    old_out_file_name = results_file_name
+                                    results_file_name = results_prefix + "_" + str(file_count) + "_" + new_file_suffix + ".csv"
                                     file_suffix = new_file_suffix
                                     if out is not None:
                                         out.close()
-                                        shutil.move(output_path + old_out_file_name,
-                                                    "F:\\UCD\\candidates\\results\\" + old_out_file_name)
-                                    out = open(output_path + out_file_name, "w")
+                                        shutil.move(work_folder + old_out_file_name,
+                                                    results_folder + old_out_file_name)
+                                    out = open(work_folder + results_file_name, "w")
                                     out.write(
-                                        "classification_id;user_name;user_id;user_ip;workflow_id;workflow_name;workflow_version;started_at;gold_standard;expert;subject_id;tile_number;tile_center_ra;tile_center_dec;click_frame;click_tool;click_x;click_y;ra;dec\n")
+                                        "classification_id;user_name;user_id;user_ip;workflow_id;workflow_name"
+                                        ";workflow_version;started_at;gold_standard;expert;subject_id;tile_number"
+                                        ";tile_center_ra;tile_center_dec;click_frame;click_tool;click_x;click_y;ra"
+                                        ";dec\n")
                                 common.write(started_at_string)
                                 common.write(";")
                             common.write(classification.gold_standard)
@@ -173,14 +157,15 @@ def process_candidates(tile_list: list, origin_list: list, input_folder: str, ou
                             no_click_line = common.getvalue()
                             for click in clicks:
                                 x, y = convert_zoo_to_subtile(click)
-                                ll_x, ll_y = get_sub_tile_lower_left(tile_list, origin_list, tile_number,
-                                                                     sub_tile_center.ra, sub_tile_center.dec)
+                                ll_x, ll_y = FitsTiles.get_sub_tile_lower_left(wcs_tile_list, origin_list, tile_number,
+                                                                               sub_tile_center.ra, sub_tile_center.dec)
                                 if (ll_x is None) or (ll_y is None):
                                     continue
                                 final_x = ll_x + x
                                 final_y = ll_y + y
                                 origin = origin_list[tile_number]
-                                world = utils.pixel_to_skycoord(final_x + origin, final_y + origin, tile_list[tile_number],
+                                world = utils.pixel_to_skycoord(origin + final_x, origin + final_y,
+                                                                wcs_tile_list[tile_number],
                                                                 origin, "wcs")
                                 ra = world.ra.value
                                 dec = world.dec.value
@@ -208,10 +193,10 @@ def process_candidates(tile_list: list, origin_list: list, input_folder: str, ou
                 except Exception as err:
                     print("Unexpected {err=}, {type(err)=}", err)
                     raise
-
             finally:
                 if csv is not None:
                     csv.close()
+            file_count += 1
 
     finally:
         if csv is not None:
@@ -219,7 +204,13 @@ def process_candidates(tile_list: list, origin_list: list, input_folder: str, ou
         if out is not None:
             out.close()
 
+
 def extract_clicks(line: str) -> list[Click.Click]:
+    """
+    Extract the clicks from a click line file.
+    :param line: the given click file line
+    :return: an array of :class:`~Click`
+    """
     line_aux = line
     max_idx = 0
     next_click = 0
@@ -243,7 +234,7 @@ def extract_clicks(line: str) -> list[Click.Click]:
         max_idx = max(max_idx, next_idx)
         if next_idx < 0:
             break
-        next_click = max_idx+1
+        next_click = max_idx + 1
 
         if (x is not None) and (y is not None) and (frame is not None) and (tool is not None):
             click = Click.Click(int(frame), int(tool), float(x), float(y))
@@ -251,7 +242,15 @@ def extract_clicks(line: str) -> list[Click.Click]:
     return clicks
 
 
-def read_number_from_key(line: str, key: str, start=0) -> (str | None,int):
+def read_number_from_key(line: str, key: str, start=0) -> (str | None, int):
+    """
+    Read a numerical value in a given line found after a given key and starting at a given position
+
+    :param line: the given line
+    :param key: the given key
+    :param start: the given starting position
+    :return: A tuple containing the value and the next starting position after the value.
+    """
     idx = line.find(key, start)
 
     if (idx >= 0) and (idx + len(key) < len(line)):
@@ -279,6 +278,11 @@ def read_number_from_key(line: str, key: str, start=0) -> (str | None,int):
 
 
 def extract_classification_data(line: str) -> Classification.Classification | None:
+    """
+    Extracts classification data from the given click line
+    :param line: the given click line
+    :return: A :class:`~Classification` object.
+    """
     columns = line.split(",")
 
     if columns is None:
@@ -331,36 +335,46 @@ def extract_classification_data(line: str) -> Classification.Classification | No
                                          workflow_version, started_at, gold_standard, expert, subject_id)
 
 
-def extract_sub_tile_center(line: str) -> Coordinate.Coordinate | None :
-     ra = None
-     dec = None
-     line_aux = line
-     sc_idx = line_aux.find("subtile center")
-     if (sc_idx >= 0) and (sc_idx + 14 < len(line_aux)) :
-         line_aux = line_aux[sc_idx + 14:]
-         ra_idx = line_aux.find("r.a.=")
-         dec_idx = line_aux.find("dec=")
-         if (ra_idx >= 0) and (dec_idx >= 0):
-             ra_string = line_aux[ra_idx + 5:]
-             quotes_idx = ra_string.find("\"\"")
-             if (quotes_idx >= 0) and (quotes_idx > ra_idx) and (quotes_idx > dec_idx):
-                 ra_string = ra_string[0: dec_idx - ra_idx - 5]
-                 dec_string = line_aux[dec_idx + 4: ra_idx + 5 + quotes_idx]
-                 ra = None
-                 dec = None
-                 try:
+def extract_sub_tile_center(line: str) -> Coordinate.Coordinate | None:
+    """
+    Extracts the sub-tile center coordinates (RA, Dec) from the given click line
+    :param line: the given click line
+    :return: The coordinates in :class:`~Coordinate` object.
+    """
+    ra = None
+    dec = None
+    line_aux = line
+    sc_idx = line_aux.find("subtile center")
+    if (sc_idx >= 0) and (sc_idx + 14 < len(line_aux)):
+        line_aux = line_aux[sc_idx + 14:]
+        ra_idx = line_aux.find("r.a.=")
+        dec_idx = line_aux.find("dec=")
+        if (ra_idx >= 0) and (dec_idx >= 0):
+            ra_string = line_aux[ra_idx + 5:]
+            quotes_idx = ra_string.find("\"\"")
+            if (quotes_idx >= 0) and (quotes_idx > ra_idx) and (quotes_idx > dec_idx):
+                ra_string = ra_string[0: dec_idx - ra_idx - 5]
+                dec_string = line_aux[dec_idx + 4: ra_idx + 5 + quotes_idx]
+                ra = None
+                dec = None
+                try:
                     ra = float(ra_string)
                     dec = float(dec_string)
-                 except ValueError | AttributeError:
-                     pass
+                except ValueError | AttributeError:
+                    pass
 
-     if (ra is not None) and (dec is not None):
-         return Coordinate.Coordinate(ra, dec)
-     else:
-         return None
+    if (ra is not None) and (dec is not None):
+        return Coordinate.Coordinate(ra, dec)
+    else:
+        return None
 
 
 def extract_tile_number(line: str) -> int | None:
+    """
+    Extracts the tile number from the given click line.
+    :param line: the given click line
+    :return: The tile number as an integer.
+    """
     tn_idx = line.find("tile number\"\":\"\"")
     if tn_idx >= 0:
         line_aux = line[tn_idx + 16:]
@@ -375,22 +389,16 @@ def extract_tile_number(line: str) -> int | None:
 
 
 def convert_zoo_to_subtile(click: Click) -> (float, float):
+    """
+    Converts a BYW P9 tile click pixel into FITS sub-tile pixel coordinates.
+    :param click: The given click
+    :return: A tuple containing the equivalent sub-tile pixel (x, y) coordinates.
+    """
     x = (click.x - 20.0) * 0.5
     y = 256.0 - 0.5 * click.y
 
     return x, y
 
-
-def get_sub_tile_lower_left(wcs_list: list[WCS], origin: list[int], tile_number: int, ra_center: float, dec_center: float) -> (float, float):
-    sky_coordinates = SkyCoord(ra=ra_center, dec=dec_center, frame="icrs", unit="deg")
-    pixel = utils.skycoord_to_pixel(sky_coordinates, wcs_list[tile_number], origin[tile_number], "wcs")
-    pos_horizontal = math.floor((round(pixel[0].item(0))/128.0 - 1) * 0.5)
-    pos_vertical = math.floor((round(pixel[1].item(0))/128.0 - 1) * 0.5)
-    if (pos_horizontal < 0) or (pos_horizontal > 7) or (pos_vertical < 0) or (pos_vertical > 7):
-        return None, None
-    ll_x = 256 * pos_horizontal
-    ll_y = 256 * pos_vertical
-    return ll_x, ll_y
 
 if __name__ == "__main__":
     main()

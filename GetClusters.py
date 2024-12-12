@@ -12,6 +12,11 @@ from numpy import ndarray, dtype
 
 
 def get_clicks_coordinates(input_folder: str) -> ndarray[Any, dtype[float]]:
+    """
+    Gets the coordinates from a series of files containing the user clicks in a csv format
+    @param input_folder: the folder containing the files with the clicks
+    @return: a list of coordinates in an array ([ra, dec])
+    """
     coordinate_list = []
     try:
         files = os.listdir(input_folder)
@@ -62,16 +67,34 @@ def get_clicks_coordinates(input_folder: str) -> ndarray[Any, dtype[float]]:
     return np.array(coordinate_list)
 
 
-def init_region_array(region_array):
-    for i in range(360):
+def init_region_array(region_array, ra_divisions: int = 360, dec_divisions: int = 180):
+    """
+    Initializes the array with coordinate regions
+    @param region_array: the region array to initialize
+    @param ra_divisions: number of divisions for ra values
+    @param dec_divisions:  number of divisions for dec_values
+
+    """
+    for i in range(ra_divisions):
         region_array.append([])
-        for j in range(180):
+        for j in range(dec_divisions):
             region_array[i].append([])
 
 
-def store_by_region(clicks_coordinates: ndarray[Any, dtype[float]]):
+def store_by_region(clicks_coordinates: ndarray[Any, dtype[float]], region_folder: str, ra_divisions: int = 360,
+                    dec_divisions: int = 180, bandwidth: float = 0.02):
+    """
+    Stores the list of coordinate by region.
+
+    @param clicks_coordinates: list of coordinates in an array ([ra, dec])
+    @param region_folder: the regions folder
+    @param ra_divisions: number of division for ra
+    @param dec_divisions: number of division for dec
+    @param bandwidth: the cluster bandwidth
+           (we overlap regions by the bandwidth so region-intersecting clusters are not lost)
+    """
     region_array = []
-    init_region_array(region_array)
+    init_region_array(region_array, ra_divisions, dec_divisions)
     for coordinate in clicks_coordinates:
         ra = coordinate[0]
         dec = coordinate[1]
@@ -79,34 +102,35 @@ def store_by_region(clicks_coordinates: ndarray[Any, dtype[float]]):
 
         x_pos = int(math.floor(ra))
         y_pos = int(math.floor(dec_abs))
-        region_array[x_pos % 360][y_pos % 180].append([ra, dec])
+        region_array[x_pos % ra_divisions][y_pos % dec_divisions].append([ra, dec])
 
-        x_upper_pos = int(math.floor(ra + 0.02))
-        x_lower_pos = int(math.floor(ra - 0.02))
-        y_upper_pos = int(math.floor(ra + 0.02))
-        y_lower_pos = int(math.floor(ra - 0.02))
+        x_upper_pos = int(math.floor(ra + bandwidth))
+        x_lower_pos = int(math.floor(ra - bandwidth))
+        y_upper_pos = int(math.floor(ra + bandwidth))
+        y_lower_pos = int(math.floor(ra - bandwidth))
 
         if x_upper_pos > x_pos:
-            region_array[(x_pos + 1) % 360][y_pos % 180].append([ra, dec])
+            region_array[(x_pos + 1) % ra_divisions][y_pos % dec_divisions].append([ra, dec])
             if y_upper_pos > y_pos:
-                region_array[(x_pos + 1) % 360][(y_pos + 1) % 180].append([ra, dec])
+                region_array[(x_pos + 1) % ra_divisions][(y_pos + 1) % dec_divisions].append([ra, dec])
             if y_lower_pos < y_pos:
-                region_array[(x_pos + 1) % 360][(y_pos - 1) % 180].append([ra, dec])
+                region_array[(x_pos + 1) % ra_divisions][(y_pos - 1) % dec_divisions].append([ra, dec])
         if x_lower_pos < x_pos:
-            region_array[(x_pos - 1) % 360][y_pos % 180].append([ra, dec])
+            region_array[(x_pos - 1) % ra_divisions][y_pos % dec_divisions].append([ra, dec])
             if y_upper_pos > y_pos:
-                region_array[(x_pos - 1) % 360][(y_pos + 1) % 180].append([ra, dec])
+                region_array[(x_pos - 1) % ra_divisions][(y_pos + 1) % dec_divisions].append([ra, dec])
             if y_lower_pos < y_pos:
-                region_array[(x_pos - 1) % 360][(y_pos - 1) % 180].append([ra, dec])
+                region_array[(x_pos - 1) % ra_divisions][(y_pos - 1) % dec_divisions].append([ra, dec])
         if y_upper_pos > y_pos:
-            region_array[x_pos % 360][(y_pos + 1) % 180].append([ra, dec])
+            region_array[x_pos % ra_divisions][(y_pos + 1) % dec_divisions].append([ra, dec])
         if y_lower_pos < y_pos:
-            region_array[x_pos % 360][(y_pos - 1) % 180].append([ra, dec])
+            region_array[x_pos % ra_divisions][(y_pos - 1) % dec_divisions].append([ra, dec])
 
-    for i in range(360):
-        for j in range(180):
+    for i in range(ra_divisions):
+        for j in range(dec_divisions):
             if len(region_array[i][j]) > 0:
-                file_name = "F:\\UCD\\candidates\\regions\\" + str(float(i)).replace(".", "_") + "__" + str(float(j)-90).replace(".", "_") + ".csv"
+                file_name = region_folder + str(float(i)).replace(".", "_") + "__" + str(
+                    float(j) - 90).replace(".", "_") + ".csv"
                 output_file = None
                 try:
                     output_file = open(file_name, "w")
@@ -120,24 +144,44 @@ def store_by_region(clicks_coordinates: ndarray[Any, dtype[float]]):
                         except:
                             pass
 
+
 def main():
+    """
+    Get the user clicks, sort them by regions and find cluster region by region
+    Command line use:
+    python GetClusters.py <click_files_folder> <clicks_region_folder> <cluster_file_path> <region_ra_divisions>
+                           <region_dec_division> <cluster_detection_bandwidth>
+
+    Without arguments, the command line would be like:
+    python GetClusters.py ".\\results\\" ".\\regions\\" ".\\candidates\\clusters.csv" 360 180 0.02
+
+    """
     args = sys.argv[1:]
     try:
-        input_folder = "F:\\UCD\\candidates\\results\\"
-        region_folder = "F:\\UCD\\candidates\\regions\\"
-        clusters_file_path = "F:\\UCD\\candidates\\clusters.csv"
+        input_folder = ".\\results\\"
+        region_folder = ".\\regions\\"
+        clusters_file_path = ".\\candidates\\clusters.csv"
+        ra_divisions = 360
+        dec_divisions = 180
+        bandwidth = 0.02
         clusters_file = None
         try:
-            clusters_file = open(clusters_file_path, "w")
-            clusters_file.write("center_ra;center_dec;nb_points;q;kurtosis;mean_distance;points\n")
             if len(args) > 0:
                 input_folder = args[0]
             if len(args) > 1:
                 region_folder = args[1]
             if len(args) > 2:
                 clusters_file_path = args[2]
-            #clicks_coordinates = get_clicks_coordinates(input_folder)
-            #store_by_region(clicks_coordinates)
+            if len(args) > 3:
+                ra_divisions = type(int(args[3]))
+            if len(args) > 4:
+                dec_divisions = type(int(args[4]))
+            if len(args) > 5:
+                bandwidth = type(float(args[5]))
+            clusters_file = open(clusters_file_path, "w")
+            clusters_file.write("center_ra;center_dec;nb_points;q;kurtosis;mean_distance;points\n")
+            clicks_coordinates = get_clicks_coordinates(input_folder)
+            store_by_region(clicks_coordinates, region_folder, ra_divisions, dec_divisions)
             region_files = os.listdir(region_folder)
             region_files.sort()
             for region_file_name in region_files:
@@ -156,8 +200,10 @@ def main():
                         points.append([float(line_split[0]), float(line_split[1])])
 
                     points_np_array = np.array(points)
-                    ms = MeanShift(bandwidth=0.02)
-                    fit_result = ms.fit(points_np_array)
+
+                    # Bandwidth is in sexagesimal degrees
+                    ms = MeanShift(bandwidth=bandwidth)
+                    ms.fit(points_np_array)
                     labels = ms.labels_
                     cluster_centers = ms.cluster_centers_
                     labels_unique = np.unique(labels)
@@ -184,7 +230,7 @@ def main():
                             points_l.write(str(cluster_point[1]))
                             x_difference = cluster_center[0] - cluster_point[0]
                             y_difference = cluster_center[1] - cluster_point[1]
-                            distance = math.sqrt(x_difference*x_difference + y_difference*y_difference)
+                            distance = math.sqrt(x_difference * x_difference + y_difference * y_difference)
                             distances.append(distance)
                         mean_distance = mean(distances)
                         m4 = kurtosis(distances, fisher=True, bias=False)
@@ -195,7 +241,7 @@ def main():
                         cluster_line.write(";")
                         cluster_line.write(str(len(cluster_points)))
                         cluster_line.write(";")
-                        cluster_line.write(str(m4/mean_distance))
+                        cluster_line.write(str(m4 / mean_distance))
                         cluster_line.write(";")
                         cluster_line.write(str(m4))
                         cluster_line.write(";")
@@ -204,7 +250,6 @@ def main():
                         cluster_line.write(points_l.getvalue())
                         cluster_line.write("\n")
                         clusters_file.write(cluster_line.getvalue())
-                    h = 0
                 finally:
                     if region_file is not None:
                         try:
@@ -221,7 +266,6 @@ def main():
     except Exception as err:
         print("Unexpected {err=}, {type(err)=}", err)
         raise
-
 
 
 if __name__ == "__main__":

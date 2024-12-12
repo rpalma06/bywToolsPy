@@ -1,8 +1,6 @@
 import datetime
 import unittest
 import numpy as np
-import pytest
-from numpy.testing import assert_allclose
 
 from astropy import units as u
 from astropy.modeling import models
