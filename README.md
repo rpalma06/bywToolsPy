@@ -1,3 +1,5 @@
+# BACKYARD WORLDS PLANET 9 CLICK EXTRACTION AND CLUSTER DETECTION
+
 This is a code package used to extract Backyard Worlds Planet 9 user clicks and detect click clusters. Before you start, you need:
 
 1. A folder "input" containing the files with Backyard Worlds Planet 9 clicks. The algorithm expects that the entries in the file are chronologically in order.
@@ -7,7 +9,7 @@ This is a code package used to extract Backyard Worlds Planet 9 user clicks and 
 5. The file containing the atlas FITS sub-tiles.
 
 
-# HOW TO EXTRACT CLICKS
+## HOW TO EXTRACT CLICKS
 
 Execute the file GetClicks.py:
 
@@ -41,7 +43,7 @@ The program will generate CSV files with the user clicks in the results folder. 
 - ***click_x***, ***click_y***: click pixel coordinates.
 - ***ra***, ***dec***: click coordinates.
 
-# HOW TO DETECT CLUSTERS
+## HOW TO DETECT CLUSTERS
 
 In order to detect the clusters, you need first to execute the previous step. 
 
