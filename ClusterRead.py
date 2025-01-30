@@ -1,7 +1,10 @@
+import sys
+
 import psycopg2 as ps
 
 import ClusterEllipse
 import EllipseRegression
+
 
 def main():
     connection = None
@@ -29,18 +32,30 @@ def main():
                         coordinates_string = points_string.split("|")
                         for coordinate_string in coordinates_string:
                             if coordinate_string is not None:
-                                axes = coordinates_string.split("$")
+                                axes = coordinate_string.split("$")
                                 if axes is not None and len(axes) == 2:
                                     ra = float(axes[0])
                                     dec = float(axes[1])
                                     cluster_ellipse.add_point(ra, dec)
-                                    ellipse_result = EllipseRegression.fit_ellipse(cluster_ellipse.get_point_matrix())
-                                    cluster_ellipse.mean = ellipse_result[0]
-                                    cluster_ellipse.major_axis_length = ellipse_result[1]
-                                    cluster_ellipse.minor_axis_length = ellipse_result[2]
-                                    cluster_ellipse.angle = ellipse_result[3]
-                                    cluster_ellipse.eigenvectors = ellipse_result[4]
-
+                        if len(cluster_ellipse.points) > 1:
+                            unique_points = cluster_ellipse.get_unique_points()
+                            if unique_points is not None and len(unique_points) >= 3:
+                                ellipse_result = EllipseRegression.fit_ellipse(unique_points)
+                                cluster_ellipse.mean = ellipse_result[0]
+                                cluster_ellipse.major_axis_length = ellipse_result[1]
+                                cluster_ellipse.minor_axis_length = ellipse_result[2]
+                                cluster_ellipse.angle = ellipse_result[3]
+                                cluster_ellipse.eigenvectors = ellipse_result[4]
+                                if cluster_ellipse.minor_axis_length > 0.0002 and cluster_ellipse.minor_axis_length > 0.0002 and cluster_ellipse.get_axis_proportion() >= 1.01:
+                                    #EllipseRegression.plot_ellipse(points=unique_points, mean=cluster_ellipse.mean, major_axis_length=cluster_ellipse.major_axis_length, minor_axis_length=cluster_ellipse.minor_axis_length, angle=cluster_ellipse.angle)
+                                    #print(cluster_ellipse)
+                                    cluster_ellipses.append(cluster_ellipse)
+                cursor.close()
+                cursor = connection.cursor()
+                for cluster_ellipse in cluster_ellipses:
+                    update_sql = "UPDATE cluster_small_arcsec_no_repeat SET mean_ra = " + str(cluster_ellipse.mean[0]) + ", mean_dec = " + str(cluster_ellipse.mean[1]) + ", major_axis = " + str(cluster_ellipse.major_axis_length) + ", minor_axis = " + str(cluster_ellipse.minor_axis_length) + ", angle = " + str(cluster_ellipse.angle) + " where center_ra = " + str(cluster_ellipse.ra) + " and center_dec = " + str(cluster_ellipse.dec)
+                    cursor.execute(update_sql)
+                connection.commit()
 
     finally:
         if cursor is not None:

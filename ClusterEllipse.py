@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from Coordinate import Coordinate
+
+import numpy as np
 
 
 @dataclass
@@ -85,11 +86,14 @@ class ClusterEllipse:
         self._eigenvectors = new_eigenvectors
 
     def add_point(self, ra, dec):
-        return self._points.append(Coordinate.Coordinate(ra, dec))
+        return self._points.append((ra, dec))
 
-    def get_point_matrix(self):
-        point_matrix = []
-        if self._points is not None:
-            for point in self._points:
-                point_matrix.append((point.ra, point.dec))
-        return point_matrix
+    def get_unique_points(self):
+        return list(set(self._points))
+
+    def get_axis_proportion(self):
+        proportion = 1.0
+        if self.minor_axis_length is not None and self.major_axis_length is not None:
+            proportion = self._major_axis_length / self._minor_axis_length
+        return proportion
+
