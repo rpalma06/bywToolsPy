@@ -1,5 +1,8 @@
+import collections
+
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 
 def fit_ellipse(points):
@@ -29,7 +32,7 @@ def fit_ellipse(points):
     return mean, major_axis_length, minor_axis_length, angle, eigenvectors
 
 
-def plot_ellipse(mean, major_axis_length, minor_axis_length, angle):
+def plot_ellipse(points, mean: float, major_axis_length: float, minor_axis_length: float, angle: float) -> object:
     # Step 7: Create a parametric representation of the ellipse
     t = np.linspace(0, 2 * np.pi, 100)
     cos_t = np.cos(t)
@@ -39,35 +42,42 @@ def plot_ellipse(mean, major_axis_length, minor_axis_length, angle):
     ellipse_x = major_axis_length * cos_t
     ellipse_y = minor_axis_length * sin_t
 
+    radian_angle = angle  # angle * math.pi / 180.0
+
     # Rotate the ellipse based on the angle
-    rotation_matrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
+    rotation_matrix = np.array(
+        [[np.cos(radian_angle), -np.sin(radian_angle)], [np.sin(radian_angle), np.cos(radian_angle)]])
     ellipse_coords = np.dot(np.vstack((ellipse_x, ellipse_y)).T, rotation_matrix)
 
     # Translate ellipse to the mean center
     ellipse_coords += mean
 
     # Plot the points and the fitted ellipse
-    plt.scatter(points[:, 0], points[:, 1], color='blue', label='Data points')
+    ras = []
+    decs = []
+    for point in points:
+        ras.append(point[0])
+        decs.append(point[1])
+    plt.scatter(np.array(ras), np.array(decs), color='blue', label='Data points')
     plt.plot(ellipse_coords[:, 0], ellipse_coords[:, 1], color='red', label='Fitted ellipse')
     plt.gca().set_aspect('equal', adjustable='box')
-    plt.legend()
+    #plt.legend()
     plt.show()
 
-
-# Example usage with random data points
-np.random.seed(0)
-# Create a set of points roughly forming an ellipse
-points = np.random.randn(200, 2)
-points[:, 0] = points[:, 0] * 3  # Stretch along x-axis
-points[:, 1] = points[:, 1] * 1.5  # Stretch along y-axis
-points = np.dot(points,
-                np.array([[np.cos(np.pi / 4), -np.sin(np.pi / 4)], [np.sin(np.pi / 4), np.cos(np.pi / 4)]]))  # Rotate
-
-# Fit ellipse
-mean, major_axis_length, minor_axis_length, angle, eigenvectors = fit_ellipse(points)
-
-# Plot result
-plot_ellipse(mean, major_axis_length, minor_axis_length, angle)
+# # Example usage with random data points
+# np.random.seed(0)
+# # Create a set of points roughly forming an ellipse
+# points = np.random.randn(200, 2)
+# points[:, 0] = points[:, 0] * 3  # Stretch along x-axis
+# points[:, 1] = points[:, 1] * 1.5  # Stretch along y-axis
+# points = np.dot(points,
+#                 np.array([[np.cos(np.pi / 4), -np.sin(np.pi / 4)], [np.sin(np.pi / 4), np.cos(np.pi / 4)]]))  # Rotate
+#
+# # Fit ellipse
+# mean, major_axis_length, minor_axis_length, angle, eigenvectors = fit_ellipse(points)
+#
+# # Plot result
+# plot_ellipse(mean, major_axis_length, minor_axis_length, angle)
 
 # Explanation of the Code:
 # fit_ellipse function:
