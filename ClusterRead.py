@@ -46,13 +46,17 @@ def main():
                                 cluster_ellipse.minor_axis_length = ellipse_result[2]
                                 cluster_ellipse.angle = ellipse_result[3]
                                 cluster_ellipse.eigenvectors = ellipse_result[4]
-                                if cluster_ellipse.minor_axis_length > 0.0002 and cluster_ellipse.minor_axis_length > 0.0002 and cluster_ellipse.get_axis_proportion() >= 1.01:
-                                    #EllipseRegression.plot_ellipse(points=unique_points, mean=cluster_ellipse.mean,
-                                    #                               major_axis_length=cluster_ellipse.major_axis_length,
-                                    #                               minor_axis_length=cluster_ellipse.minor_axis_length,
-                                    #                               angle=cluster_ellipse.angle)
+                                cluster_ellipse.eigenvalues = ellipse_result[5]
+                                #EllipseRegression.plot_ellipse(points=unique_points, mean=cluster_ellipse.mean,
+                                #                               major_axis_length=cluster_ellipse.major_axis_length,
+                                #                               minor_axis_length=cluster_ellipse.minor_axis_length,
+                                #                               angle=cluster_ellipse.angle,
+                                #                               eigenvectors=cluster_ellipse.eigenvectors,
+                                #                               eigenvalues=cluster_ellipse.eigenvalues)
+                                #if cluster_ellipse.minor_axis_length > 0.0002 and cluster_ellipse.minor_axis_length > 0.0002 and cluster_ellipse.get_axis_proportion() >= 1.01:
+
                                     #print(cluster_ellipse)
-                                    cluster_ellipses.append(cluster_ellipse)
+                                cluster_ellipses.append(cluster_ellipse)
                 cursor.close()
                 cursor = connection.cursor()
                 for cluster_ellipse in cluster_ellipses:

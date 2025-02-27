@@ -27,10 +27,10 @@ def fit_ellipse(points , confidence):
 
     angle =  math.atan2(covariance_matrix[0, 1], eigenvalues[0] - covariance_matrix[0, 0])
 
-    return mean, major_axis_length, minor_axis_length, angle, eigenvectors
+    return mean, major_axis_length, minor_axis_length, angle, eigenvectors, eigenvalues
 
 
-def plot_ellipse(points, mean: float, major_axis_length: float, minor_axis_length: float, angle: float) -> object:
+def plot_ellipse(points, mean, major_axis_length: float, minor_axis_length: float, angle: float, eigenvectors, eigenvalues):
     # Step 7: Create a parametric representation of the ellipse
     t = np.linspace(0, 2 * np.pi, 100)
     cos_t = np.cos(t)
@@ -58,6 +58,20 @@ def plot_ellipse(points, mean: float, major_axis_length: float, minor_axis_lengt
         decs.append(point[1])
     plt.scatter(np.array(ras), np.array(decs), color='blue', label='Data points')
     plt.plot(ellipse_coords[:, 0], ellipse_coords[:, 1], color='red', label='Fitted ellipse')
+    axis_eigen_0 = 0.0
+    axis_eigen_1 = 0.0
+    if eigenvalues[0] > eigenvalues[1]:
+        axis_eigen_0 = major_axis_length
+        axis_eigen_1 = minor_axis_length
+    else:
+        axis_eigen_1 = major_axis_length
+        axis_eigen_0 = minor_axis_length
+
+    plt.plot(ellipse_coords[:, 0], ellipse_coords[:, 1], color='red', label='Fitted ellipse')
+    plt.plot([mean[0], mean[0] + eigenvectors[0, 0] * axis_eigen_0],
+             [mean[1], mean[1] + eigenvectors[0, 1] * axis_eigen_0], color='orange')
+    plt.plot([mean[0], mean[0] + eigenvectors[1, 0] * axis_eigen_1],
+             [mean[1], mean[1] + eigenvectors[1, 1] * axis_eigen_1], color='magenta')
     plt.gca().set_aspect('equal', adjustable='box')
     #plt.legend()
     plt.show()
