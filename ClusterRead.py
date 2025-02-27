@@ -39,15 +39,18 @@ def main():
                                     cluster_ellipse.add_point(ra, dec)
                         if len(cluster_ellipse.points) > 1:
                             unique_points = cluster_ellipse.get_unique_points()
-                            if unique_points is not None and len(unique_points) >= 3:
-                                ellipse_result = EllipseRegression.fit_ellipse(unique_points)
+                            if unique_points is not None and len(unique_points) >= 5:
+                                ellipse_result = EllipseRegression.fit_ellipse(unique_points, 0.50)
                                 cluster_ellipse.mean = ellipse_result[0]
                                 cluster_ellipse.major_axis_length = ellipse_result[1]
                                 cluster_ellipse.minor_axis_length = ellipse_result[2]
                                 cluster_ellipse.angle = ellipse_result[3]
                                 cluster_ellipse.eigenvectors = ellipse_result[4]
                                 if cluster_ellipse.minor_axis_length > 0.0002 and cluster_ellipse.minor_axis_length > 0.0002 and cluster_ellipse.get_axis_proportion() >= 1.01:
-                                    #EllipseRegression.plot_ellipse(points=unique_points, mean=cluster_ellipse.mean, major_axis_length=cluster_ellipse.major_axis_length, minor_axis_length=cluster_ellipse.minor_axis_length, angle=cluster_ellipse.angle)
+                                    #EllipseRegression.plot_ellipse(points=unique_points, mean=cluster_ellipse.mean,
+                                    #                               major_axis_length=cluster_ellipse.major_axis_length,
+                                    #                               minor_axis_length=cluster_ellipse.minor_axis_length,
+                                    #                               angle=cluster_ellipse.angle)
                                     #print(cluster_ellipse)
                                     cluster_ellipses.append(cluster_ellipse)
                 cursor.close()
@@ -56,7 +59,9 @@ def main():
                     update_sql = "UPDATE cluster_small_arcsec_no_repeat SET mean_ra = " + str(cluster_ellipse.mean[0]) + ", mean_dec = " + str(cluster_ellipse.mean[1]) + ", major_axis = " + str(cluster_ellipse.major_axis_length) + ", minor_axis = " + str(cluster_ellipse.minor_axis_length) + ", angle = " + str(cluster_ellipse.angle) + " where center_ra = " + str(cluster_ellipse.ra) + " and center_dec = " + str(cluster_ellipse.dec)
                     cursor.execute(update_sql)
                 connection.commit()
-
+    except Exception as err:
+        print(f"Unexpected {err=}, {type(err)=}")
+        raise
     finally:
         if cursor is not None:
             cursor.close()
