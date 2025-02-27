@@ -11,11 +11,12 @@ class ClusterEllipse:
         self._ra = 0.0
         self._dec = 0.0
         self._points = []
-        self._mean = 0.0
+        self._mean = None
         self._major_axis_length = 0.0
         self._minor_axis_length = 0.0
         self._angle = 0.0
         self._eigenvectors = None
+        self._eigenvalues = None
 
     @property
     def id(self):
@@ -84,6 +85,14 @@ class ClusterEllipse:
     @eigenvectors.setter
     def eigenvectors(self, new_eigenvectors):
         self._eigenvectors = new_eigenvectors
+
+    @property
+    def eigenvalues(self):
+        return self._eigenvalues
+
+    @eigenvalues.setter
+    def eigenvalues(self, new_eigenvalues):
+        self._eigenvalues = new_eigenvalues
 
     def add_point(self, ra, dec):
         return self._points.append((ra, dec))
