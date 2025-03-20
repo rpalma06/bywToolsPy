@@ -60,7 +60,7 @@ def main():
                 cursor.close()
                 cursor = connection.cursor()
                 for cluster_ellipse in cluster_ellipses:
-                    update_sql = "UPDATE cluster_small_arcsec_no_repeat SET mean_ra = " + str(cluster_ellipse.mean[0]) + ", mean_dec = " + str(cluster_ellipse.mean[1]) + ", major_axis = " + str(cluster_ellipse.major_axis_length) + ", minor_axis = " + str(cluster_ellipse.minor_axis_length) + ", angle = " + str(cluster_ellipse.angle) + " where center_ra = " + str(cluster_ellipse.ra) + " and center_dec = " + str(cluster_ellipse.dec)
+                    update_sql = "UPDATE cluster_small_arcsec_no_repeat SET mean_ra = " + str(cluster_ellipse.mean[0]) + ", mean_dec = " + str(cluster_ellipse.mean[1]) + ", major_axis = " + str(cluster_ellipse.major_axis_length) + ", minor_axis = " + str(cluster_ellipse.minor_axis_length) + ", angle = " + str(cluster_ellipse.angle) + " where id = " + str(cluster_ellipse.id)
                     cursor.execute(update_sql)
                 connection.commit()
     except Exception as err:
