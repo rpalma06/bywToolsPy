@@ -1,6 +1,8 @@
 # BACKYARD WORLDS PLANET 9 CLICK EXTRACTION AND CLUSTER DETECTION
 
-This is a code package used to extract Backyard Worlds Planet 9 user clicks and detect click clusters. Before you start, you need:
+This is a code package used to extract Backyard Worlds Planet 9 user clicks and detect click clusters. It is a python adaptation of Aaron Meisner's IDL code that can be found at https://github.com/backyardworlds/byp9
+
+Before you start, you need:
 
 1. A folder "input" containing the files with Backyard Worlds Planet 9 clicks. The algorithm expects that the entries in the file are chronologically in order.
 2. A folder "work" for intermediate files.
