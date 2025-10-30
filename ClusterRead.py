@@ -39,7 +39,7 @@ def main():
                                     cluster_ellipse.add_point(ra, dec)
                         if len(cluster_ellipse.points) > 1:
                             unique_points = cluster_ellipse.get_unique_points()
-                            if unique_points is not None and len(unique_points) >= 5:
+                            if unique_points is not None and len(unique_points) >= 3:
                                 ellipse_result = EllipseRegression.fit_ellipse(unique_points, 0.50)
                                 cluster_ellipse.mean = ellipse_result[0]
                                 cluster_ellipse.major_axis_length = ellipse_result[1]
@@ -47,12 +47,12 @@ def main():
                                 cluster_ellipse.angle = ellipse_result[3]
                                 cluster_ellipse.eigenvectors = ellipse_result[4]
                                 cluster_ellipse.eigenvalues = ellipse_result[5]
-                                #EllipseRegression.plot_ellipse(points=unique_points, mean=cluster_ellipse.mean,
-                                #                               major_axis_length=cluster_ellipse.major_axis_length,
-                                #                               minor_axis_length=cluster_ellipse.minor_axis_length,
-                                #                               angle=cluster_ellipse.angle,
-                                #                               eigenvectors=cluster_ellipse.eigenvectors,
-                                #                               eigenvalues=cluster_ellipse.eigenvalues)
+                                EllipseRegression.plot_ellipse(points=unique_points, mean=cluster_ellipse.mean,
+                                                               major_axis_length=cluster_ellipse.major_axis_length,
+                                                               minor_axis_length=cluster_ellipse.minor_axis_length,
+                                                               angle=cluster_ellipse.angle,
+                                                               eigenvectors=cluster_ellipse.eigenvectors,
+                                                               eigenvalues=cluster_ellipse.eigenvalues)
                                 #if cluster_ellipse.minor_axis_length > 0.0002 and cluster_ellipse.minor_axis_length > 0.0002 and cluster_ellipse.get_axis_proportion() >= 1.01:
 
                                     #print(cluster_ellipse)
