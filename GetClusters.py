@@ -181,7 +181,7 @@ def main():
             clusters_file = open(clusters_file_path, "w")
             clusters_file.write("center_ra;center_dec;nb_points;q;kurtosis;mean_distance;points\n")
             clicks_coordinates = get_clicks_coordinates(input_folder)
-            store_by_region(clicks_coordinates, region_folder, ra_divisions, dec_divisions)
+            store_by_region(clicks_coordinates, region_folder, ra_divisions, dec_divisions, bandwidth)
             region_files = os.listdir(region_folder)
             region_files.sort()
             for region_file_name in region_files:
